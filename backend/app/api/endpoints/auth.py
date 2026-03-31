@@ -12,15 +12,26 @@ router = APIRouter()
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
-    # 1. check if email already exists → 409 if yes
-    # 2. create and return the user
-    ...
+    existing_user = get_user_by_email(db, email=user_in.email)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A user with this email already exists"
+        )
+    user = create_user(db=db, user_in=user_in)
+    return user
 
 
 @router.post("/login", response_model=TokenResponse)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # 1. authenticate_user using form_data.username and form_data.password
-    # 2. if None → raise 401
-    # 3. create token with user's email as subject
-    # 4. return TokenResponse
-    ...
+    user = authenticate_user(db, email=form_data.username, password=form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password"
+        )
+    access_token = create_access_token(subject=user.email)
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
