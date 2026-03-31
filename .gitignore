@@ -1,0 +1,42 @@
+# Python cache & bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+
+# Environment variables
+.env
+
+# VS Code settings
+.vscode/
+
+# MacOS
+.DS_Store
+
+# Pytest / coverage
+htmlcov/
+.coverage
+.pytest_cache/
+
+# Node / Frontend
+node_modules/
+dist/
+frontend/dist/
+
+# Build artifacts
+*.egg-info/
+.eggs/
+
+# Logs
+*.log
+```
+
+Key additions:
+```
+.pytest_cache/    → test runner cache (Sprint 11)
+node_modules/     → frontend dependencies (never push these)
+dist/             → frontend build output
+*.log             → any log files generated at runtime
