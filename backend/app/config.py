@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     # Optional / Logging
     LOG_LEVEL: str = "DEBUG"
 
+    # Google OAuth2
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_REDIRECT_URI: str
+
     class Config:
         env_file = ENV_FILE
         case_sensitive = False
