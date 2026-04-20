@@ -1,5 +1,5 @@
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -7,6 +7,8 @@ from app.config import settings
 from app.crud.user import get_user_by_email, create_user
 from app.core.security import create_access_token
 from app.schemas.user import UserCreate, TokenResponse
+from app.main import limiter
+
 
 router = APIRouter()
 
@@ -15,7 +17,8 @@ GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 
 @router.get("/login")
-def google_login():
+@limiter.limit("20/minute")
+def google_login(request: Request):
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
         "redirect_uri": settings.GOOGLE_REDIRECT_URI,
@@ -30,7 +33,8 @@ def google_login():
     return {"url": google_url}
 
 @router.get("/callback", response_model=TokenResponse)
-def google_callback(code: str, db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+def google_callback(request: Request, code: str, db: Session = Depends(get_db)):
     with httpx.Client() as client:
         token_response = client.post(
             GOOGLE_TOKEN_URL,

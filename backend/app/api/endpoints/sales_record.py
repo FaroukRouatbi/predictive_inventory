@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
@@ -10,12 +10,16 @@ from app.schemas.sales_record import SalesRecordCreate, SalesRecordResponse
 from app.crud import sales_record as crud_sales
 from app.crud import product as crud_product
 from app.crud import inventory as crud_inventory
+from app.main import limiter
+
 
 router = APIRouter()
 
 
 @router.post("/", response_model=SalesRecordResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 def record_sale(
+    request: Request,
     sale_in: SalesRecordCreate,
     background_tasks: BackgroundTasks,          # ← add
     db: Session = Depends(get_db)
@@ -72,7 +76,9 @@ def record_sale(
 
 
 @router.get("/product/{product_id}", response_model=List[SalesRecordResponse])
+@limiter.limit("60/minute")
 def read_sales_by_product(
+    request: Request,
     product_id: UUID,
     skip: int = 0,
     limit: int = 100,
@@ -88,7 +94,9 @@ def read_sales_by_product(
 
 
 @router.get("/product/{product_id}/window", response_model=List[SalesRecordResponse])
+@limiter.limit("60/minute")
 def read_sales_in_window(
+    request: Request,
     product_id: UUID,
     start_date: datetime,
     end_date: datetime,
@@ -116,7 +124,9 @@ def read_sales_in_window(
 
 
 @router.get("/product/{product_id}/revenue", response_model=dict)
+@limiter.limit("60/minute")
 def read_product_revenue(
+    request: Request,
     product_id: UUID,
     start_date: datetime = None,
     end_date: datetime = None,
@@ -144,7 +154,8 @@ def read_product_revenue(
 
 
 @router.get("/{sale_id}", response_model=SalesRecordResponse)
-def read_sale(sale_id: UUID, db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def read_sale(request: Request, sale_id: UUID, db: Session = Depends(get_db)):
     sale = crud_sales.get_sale(db=db, sale_id=sale_id)
     if not sale:
         raise HTTPException(
@@ -155,7 +166,8 @@ def read_sale(sale_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.delete("/{sale_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_sale(sale_id: UUID, db: Session = Depends(get_db)):
+@limiter.limit("30/minute")
+def delete_sale(request: Request, sale_id: UUID, db: Session = Depends(get_db)):
     sale = crud_sales.delete_sale(db=db, sale_id=sale_id)
     if not sale:
         raise HTTPException(

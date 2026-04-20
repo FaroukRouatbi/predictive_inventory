@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import List
@@ -8,13 +8,15 @@ from app.db.session import get_db
 from app.schemas.inventory import InventoryCreate, InventoryUpdate, InventoryResponse
 from app.crud import inventory as crud_inventory
 from app.crud import product as crud_product
+from app.main import limiter
+
 
 router = APIRouter()
 
 
 @router.post("/", response_model=InventoryResponse, status_code=status.HTTP_201_CREATED)
-def initialize_inventory(inventory_in: InventoryCreate, db: Session = Depends(get_db)):
-    # Issue 1 fix: actually check the return value
+@limiter.limit("30/minute")
+def initialize_inventory(request: Request, inventory_in: InventoryCreate, db: Session = Depends(get_db)):
     product = crud_product.get_product(db, product_id=inventory_in.product_id)
     if not product:
         raise HTTPException(
@@ -34,12 +36,14 @@ def initialize_inventory(inventory_in: InventoryCreate, db: Session = Depends(ge
 
 
 @router.get("/", response_model=List[InventoryResponse])
-def read_all_inventory(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def read_all_inventory(request: Request, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return crud_inventory.get_all_inventory(db=db, skip=skip, limit=limit)
 
 
 @router.get("/{product_id}", response_model=InventoryResponse)
-def read_inventory(product_id: UUID, db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def read_inventory(request: Request, product_id: UUID, db: Session = Depends(get_db)):
     inventory = crud_inventory.get_inventory_by_product(db, product_id)
     if not inventory:
         raise HTTPException(
@@ -50,7 +54,9 @@ def read_inventory(product_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.put("/{product_id}", response_model=InventoryResponse)
+@limiter.limit("30/minute")
 def update_inventory(
+    request: Request,
     product_id: UUID,
     inventory_in: InventoryUpdate,
     db: Session = Depends(get_db),
@@ -69,7 +75,8 @@ def update_inventory(
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_inventory(product_id: UUID, db: Session = Depends(get_db)):
+@limiter.limit("30/minute")
+def delete_inventory(request: Request, product_id: UUID, db: Session = Depends(get_db)):
     deleted = crud_inventory.delete_inventory(db, product_id)
     if not deleted:
         raise HTTPException(
