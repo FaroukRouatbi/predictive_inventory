@@ -7,7 +7,7 @@ from app.config import settings
 from app.crud.user import get_user_by_email, create_user
 from app.core.security import create_access_token
 from app.schemas.user import UserCreate, TokenResponse
-from app.main import limiter
+from app.core.limiter import limiter
 
 
 router = APIRouter()

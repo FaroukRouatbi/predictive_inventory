@@ -6,7 +6,7 @@ from uuid import UUID
 from app.db.session import get_db
 from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse
 from app.crud import product as crud_product
-from app.main import limiter
+from app.core.limiter import limiter
 
 
 router = APIRouter()

@@ -10,7 +10,7 @@ from app.schemas.sales_record import SalesRecordCreate, SalesRecordResponse
 from app.crud import sales_record as crud_sales
 from app.crud import product as crud_product
 from app.crud import inventory as crud_inventory
-from app.main import limiter
+from app.core.limiter import limiter
 
 
 router = APIRouter()

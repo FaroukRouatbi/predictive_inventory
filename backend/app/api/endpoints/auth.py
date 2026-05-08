@@ -1,4 +1,4 @@
-from app.main import limiter
+from app.core.limiter import limiter
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session

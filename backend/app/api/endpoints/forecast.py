@@ -8,7 +8,7 @@ from app.schemas.forecast import ForecastRequest, ForecastResponse
 from app.services.forecasting.engine import ForecastingEngine
 
 from app.core.cache import get_cached_forecast, set_cached_forecast, build_forecast_key
-from app.main import limiter
+from app.core.limiter import limiter
 
 router = APIRouter()
 engine = ForecastingEngine()

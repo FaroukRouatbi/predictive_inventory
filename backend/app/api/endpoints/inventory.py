@@ -8,7 +8,7 @@ from app.db.session import get_db
 from app.schemas.inventory import InventoryCreate, InventoryUpdate, InventoryResponse
 from app.crud import inventory as crud_inventory
 from app.crud import product as crud_product
-from app.main import limiter
+from app.core.limiter import limiter
 
 
 router = APIRouter()

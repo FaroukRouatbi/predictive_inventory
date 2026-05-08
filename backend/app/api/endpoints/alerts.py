@@ -7,8 +7,7 @@ from app.db.session import get_db
 from app.schemas.reorder_alert import ReorderAlertResponse, ResolveAlertRequest
 from app.crud import reorder_alert as crud_alert
 from app.crud import product as crud_product
-from app.main import limiter
-
+from app.core.limiter import limiter
 
 router = APIRouter()
 
