@@ -9,6 +9,8 @@ from app.schemas.inventory import InventoryCreate, InventoryUpdate, InventoryRes
 from app.crud import inventory as crud_inventory
 from app.crud import product as crud_product
 from app.core.limiter import limiter
+from app.api.dependencies import get_current_user
+from app.models.user import User
 
 router = APIRouter()
 
@@ -18,24 +20,23 @@ router = APIRouter()
     response_model=InventoryResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Initialize inventory for a product",
-    description="Creates an inventory record linked to a product. Each product can only have one inventory record. Returns 404 if product not found, 409 if inventory already exists."
+    description="Creates an inventory record linked to a product. Each product can only have one inventory record."
 )
 @limiter.limit("30/minute")
-def initialize_inventory(request: Request, inventory_in: InventoryCreate, db: Session = Depends(get_db)):
+def initialize_inventory(
+    request: Request,
+    inventory_in: InventoryCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     product = crud_product.get_product(db, product_id=inventory_in.product_id)
     if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found.")
     try:
         return crud_inventory.create_inventory(db=db, inventory_in=inventory_in)
     except IntegrityError:
         db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="An inventory record for this product already exists."
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="An inventory record for this product already exists.")
 
 
 @router.get(
@@ -45,7 +46,13 @@ def initialize_inventory(request: Request, inventory_in: InventoryCreate, db: Se
     description="Returns a paginated list of all inventory records with current stock levels."
 )
 @limiter.limit("60/minute")
-def read_all_inventory(request: Request, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def read_all_inventory(
+    request: Request,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     return crud_inventory.get_all_inventory(db=db, skip=skip, limit=limit)
 
 
@@ -53,16 +60,18 @@ def read_all_inventory(request: Request, skip: int = 0, limit: int = 100, db: Se
     "/{product_id}",
     response_model=InventoryResponse,
     summary="Get inventory by product",
-    description="Returns the inventory record for a specific product. Returns 404 if not found."
+    description="Returns the inventory record for a specific product."
 )
 @limiter.limit("60/minute")
-def read_inventory(request: Request, product_id: UUID, db: Session = Depends(get_db)):
+def read_inventory(
+    request: Request,
+    product_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     inventory = crud_inventory.get_inventory_by_product(db, product_id)
     if not inventory:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Inventory record not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory record not found.")
     return inventory
 
 
@@ -70,7 +79,7 @@ def read_inventory(request: Request, product_id: UUID, db: Session = Depends(get
     "/{product_id}",
     response_model=InventoryResponse,
     summary="Update inventory",
-    description="Partially updates an inventory record. Only provided fields are updated. Use this for manual stock corrections. For sales, use the /sales endpoint which handles atomic stock deduction."
+    description="Partially updates an inventory record."
 )
 @limiter.limit("30/minute")
 def update_inventory(
@@ -78,17 +87,13 @@ def update_inventory(
     product_id: UUID,
     inventory_in: InventoryUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     updated = crud_inventory.update_inventory(
-        db=db,
-        product_id=product_id,
-        inventory_update=inventory_in,
+        db=db, product_id=product_id, inventory_update=inventory_in,
     )
     if not updated:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Inventory record not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory record not found.")
     return updated
 
 
@@ -96,14 +101,16 @@ def update_inventory(
     "/{product_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete inventory record",
-    description="Permanently deletes an inventory record. Returns 404 if not found."
+    description="Permanently deletes an inventory record."
 )
 @limiter.limit("30/minute")
-def delete_inventory(request: Request, product_id: UUID, db: Session = Depends(get_db)):
+def delete_inventory(
+    request: Request,
+    product_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     deleted = crud_inventory.delete_inventory(db, product_id)
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Inventory record not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory record not found.")
     return None

@@ -7,6 +7,8 @@ from app.db.session import get_db
 from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse
 from app.crud import product as crud_product
 from app.core.limiter import limiter
+from app.api.dependencies import get_current_user
+from app.models.user import User
 
 router = APIRouter()
 
@@ -19,7 +21,12 @@ router = APIRouter()
     description="Creates a product in the catalog. SKU must be unique and at least 3 characters. Price must be stored in cents (e.g. $9.99 = 999). Returns 409 if SKU already exists."
 )
 @limiter.limit("30/minute")
-def create_new_product(request: Request, product_in: ProductCreate, db: Session = Depends(get_db)):
+def create_new_product(
+    request: Request,
+    product_in: ProductCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     product = crud_product.create_product(db=db, product_in=product_in)
     if not product:
         raise HTTPException(
@@ -33,10 +40,16 @@ def create_new_product(request: Request, product_in: ProductCreate, db: Session 
     "/",
     response_model=List[ProductResponse],
     summary="List all products",
-    description="Returns a paginated list of all products in the catalog. Use skip and limit for pagination."
+    description="Returns a paginated list of all products in the catalog."
 )
 @limiter.limit("60/minute")
-def read_products(request: Request, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def read_products(
+    request: Request,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     return crud_product.get_products(db=db, skip=skip, limit=limit)
 
 
@@ -47,7 +60,12 @@ def read_products(request: Request, skip: int = 0, limit: int = 100, db: Session
     description="Returns a single product by its UUID. Returns 404 if not found."
 )
 @limiter.limit("60/minute")
-def read_product(request: Request, product_id: UUID, db: Session = Depends(get_db)):
+def read_product(
+    request: Request,
+    product_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     product = crud_product.get_product(db=db, product_id=product_id)
     if not product:
         raise HTTPException(
@@ -61,7 +79,7 @@ def read_product(request: Request, product_id: UUID, db: Session = Depends(get_d
     "/{product_id}",
     response_model=ProductResponse,
     summary="Update a product",
-    description="Partially updates a product. Only provided fields are updated — omitted fields remain unchanged. Returns 404 if not found."
+    description="Partially updates a product. Only provided fields are updated."
 )
 @limiter.limit("30/minute")
 def update_existing_product(
@@ -69,6 +87,7 @@ def update_existing_product(
     product_id: UUID,
     product_in: ProductUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     product = crud_product.update_product(
         db=db, product_id=product_id, product_update=product_in
@@ -85,10 +104,15 @@ def update_existing_product(
     "/{product_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a product",
-    description="Permanently deletes a product. Returns 404 if not found. Cannot delete a product that has sales history (RESTRICT constraint)."
+    description="Permanently deletes a product. Returns 404 if not found."
 )
 @limiter.limit("30/minute")
-def delete_existing_product(request: Request, product_id: UUID, db: Session = Depends(get_db)):
+def delete_existing_product(
+    request: Request,
+    product_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     product = crud_product.delete_product(db=db, product_id=product_id)
     if not product:
         raise HTTPException(

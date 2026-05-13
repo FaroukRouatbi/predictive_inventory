@@ -19,6 +19,11 @@ from app.main import app
 from app.models.base import Base
 from app.db.session import get_db
 
+from app.crud.user import create_user
+from app.schemas.user import UserCreate
+from app.core.security import create_access_token
+
+
 # Use in-memory SQLite for tests
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///./test.db"
 
@@ -78,5 +83,25 @@ def client():
     """
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
+
+@pytest.fixture(scope="function")
+def client():
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as test_client:
+        # Create a test user and get a token
+        db = TestingSessionLocal()
+        Base.metadata.create_all(bind=engine)
+        user = create_user(db=db, user_in=UserCreate(
+            email="testuser@test.com",
+            full_name="Test User",
+            password="testpass123"
+        ))
+        token = create_access_token(subject=user.email)
+        db.close()
+
+        # Set auth header for all requests
+        test_client.headers.update({"Authorization": f"Bearer {token}"})
         yield test_client
     app.dependency_overrides.clear()

@@ -8,6 +8,8 @@ from app.schemas.forecast import ForecastRequest, ForecastResponse
 from app.services.forecasting.engine import ForecastingEngine
 from app.core.cache import get_cached_forecast, set_cached_forecast, build_forecast_key
 from app.core.limiter import limiter
+from app.api.dependencies import get_current_user
+from app.models.user import User
 
 router = APIRouter()
 engine = ForecastingEngine()
@@ -17,25 +19,15 @@ engine = ForecastingEngine()
     "/{product_id}",
     response_model=ForecastResponse,
     summary="Generate demand forecast",
-    description="""
-    Generates a demand forecast for a product using automated model selection.
-
-    The engine runs the following pipeline:
-    1. Loads sales history from DB (fills missing days with 0)
-    2. Detects trend (R² threshold 0.25), seasonality (CV threshold 0.15), and volatility
-    3. Selects candidate models based on detected factors
-    4. Backtests all candidates using MAE — picks the winner
-    5. Generates forecast with safety stock recommendation
-
-    Results are cached in Redis for 5 minutes. Returns 422 if insufficient history (< 14 days).
-    """
+    description="Generates a demand forecast using automated model selection. Results cached for 5 minutes."
 )
 @limiter.limit("10/minute")
 def generate_forecast(
     request: Request,
     product_id: UUID,
     forecast_in: ForecastRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     product = crud_product.get_product(db, product_id=product_id)
     if not product:
