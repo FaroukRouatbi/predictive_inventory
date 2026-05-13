@@ -12,6 +12,9 @@ from app.models.inventory import InventoryItem
 from app.models.sales_record import SalesRecord
 from app.models.enums import ProductCategory, Currency
 
+from app.crud.user import create_user, get_user_by_email
+from app.schemas.user import UserCreate
+
 
 # ── Seed Configuration ────────────────────────────────────────────────────────
 
@@ -153,6 +156,17 @@ def seed():
 
         db.commit()
         print("✅ Seed complete.")
+
+        demo_email = "demo@inventory.com"
+        if not get_user_by_email(db, email=demo_email):
+            create_user(db=db, user_in=UserCreate(
+                email=demo_email,
+                full_name="Demo User",
+                password="demo1234"
+            ))
+            print("✅ Demo account created: demo@inventory.com / demo123")
+        else:
+            print("✅ Demo account already exists.")
 
     except Exception as e:
         db.rollback()

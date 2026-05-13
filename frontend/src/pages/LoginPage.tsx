@@ -34,6 +34,20 @@ export default function LoginPage() {
     }
   }
 
+  const handleDemoLogin = async () => {
+    setError(null)
+    setLoading(true)
+    try {
+      const data = await loginUser('demo@inventory.com', 'demo1234')
+      login(data.access_token)
+      navigate('/')
+    } catch {
+      setError('Demo login failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -112,6 +126,27 @@ export default function LoginPage() {
             </svg>
             Continue with Google
           </button>
+
+          {/* Demo access */}
+          <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-xl p-4">
+            <p className="text-xs text-indigo-400 font-medium mb-2">
+              👋 Want to explore without signing up?
+            </p>
+            <p className="text-xs text-gray-400 mb-1">
+              Email: <span className="text-white font-mono">demo@inventory.com</span>
+            </p>
+            <p className="text-xs text-gray-400 mb-3">
+              Password: <span className="text-white font-mono">demo1234</span>
+            </p>
+            <button
+              onClick={handleDemoLogin}
+              disabled={loading}
+              className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+            >
+              🚀 One-click demo access
+            </button>
+          </div>
+
         </div>
       </div>
     </div>
