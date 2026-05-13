@@ -10,11 +10,16 @@ from app.crud import inventory as crud_inventory
 from app.crud import product as crud_product
 from app.core.limiter import limiter
 
-
 router = APIRouter()
 
 
-@router.post("/", response_model=InventoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=InventoryResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Initialize inventory for a product",
+    description="Creates an inventory record linked to a product. Each product can only have one inventory record. Returns 404 if product not found, 409 if inventory already exists."
+)
 @limiter.limit("30/minute")
 def initialize_inventory(request: Request, inventory_in: InventoryCreate, db: Session = Depends(get_db)):
     product = crud_product.get_product(db, product_id=inventory_in.product_id)
@@ -23,8 +28,6 @@ def initialize_inventory(request: Request, inventory_in: InventoryCreate, db: Se
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Product not found."
         )
-
-    # Issue 2 fix: catch duplicate inventory records cleanly
     try:
         return crud_inventory.create_inventory(db=db, inventory_in=inventory_in)
     except IntegrityError:
@@ -35,13 +38,23 @@ def initialize_inventory(request: Request, inventory_in: InventoryCreate, db: Se
         )
 
 
-@router.get("/", response_model=List[InventoryResponse])
+@router.get(
+    "/",
+    response_model=List[InventoryResponse],
+    summary="List all inventory",
+    description="Returns a paginated list of all inventory records with current stock levels."
+)
 @limiter.limit("60/minute")
 def read_all_inventory(request: Request, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return crud_inventory.get_all_inventory(db=db, skip=skip, limit=limit)
 
 
-@router.get("/{product_id}", response_model=InventoryResponse)
+@router.get(
+    "/{product_id}",
+    response_model=InventoryResponse,
+    summary="Get inventory by product",
+    description="Returns the inventory record for a specific product. Returns 404 if not found."
+)
 @limiter.limit("60/minute")
 def read_inventory(request: Request, product_id: UUID, db: Session = Depends(get_db)):
     inventory = crud_inventory.get_inventory_by_product(db, product_id)
@@ -53,7 +66,12 @@ def read_inventory(request: Request, product_id: UUID, db: Session = Depends(get
     return inventory
 
 
-@router.put("/{product_id}", response_model=InventoryResponse)
+@router.put(
+    "/{product_id}",
+    response_model=InventoryResponse,
+    summary="Update inventory",
+    description="Partially updates an inventory record. Only provided fields are updated. Use this for manual stock corrections. For sales, use the /sales endpoint which handles atomic stock deduction."
+)
 @limiter.limit("30/minute")
 def update_inventory(
     request: Request,
@@ -74,7 +92,12 @@ def update_inventory(
     return updated
 
 
-@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{product_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete inventory record",
+    description="Permanently deletes an inventory record. Returns 404 if not found."
+)
 @limiter.limit("30/minute")
 def delete_inventory(request: Request, product_id: UUID, db: Session = Depends(get_db)):
     deleted = crud_inventory.delete_inventory(db, product_id)
