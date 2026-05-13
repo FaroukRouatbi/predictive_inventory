@@ -17,7 +17,7 @@ def make_product():
 
 def test_create_product(db):
     product_in = make_product()
-    product = create_product(db=db, product=product_in)
+    product = create_product(db=db, product_in=product_in)
     assert product is not None
     assert product.id is not None
     assert product.sku == "TEST-001"
@@ -26,7 +26,7 @@ def test_create_product(db):
 
 def test_get_product(db):
     product_in = make_product()
-    created = create_product(db=db, product=product_in)
+    created = create_product(db=db, product_in=product_in)
     fetched = get_product(db=db, product_id=created.id)
     assert fetched is not None
     assert fetched.id == created.id
@@ -35,7 +35,7 @@ def test_get_product(db):
 
 def test_get_product_by_sku(db):
     product_in = make_product()
-    created = create_product(db=db, product=product_in)
+    created = create_product(db=db, product_in=product_in)
     fetched = get_product_by_sku(db=db, sku="TEST-001")
     assert fetched is not None
     assert fetched.id == created.id
@@ -43,7 +43,7 @@ def test_get_product_by_sku(db):
 
 def test_update_product(db):
     product_in = make_product()
-    created = create_product(db=db, product=product_in)
+    created = create_product(db=db, product_in=product_in)
     updated = update_product(
         db=db,
         product_id=created.id,
@@ -56,7 +56,7 @@ def test_update_product(db):
 
 def test_delete_product(db):
     product_in = make_product()
-    created = create_product(db=db, product=product_in)
+    created = create_product(db=db, product_in=product_in)
     deleted = delete_product(db=db, product_id=created.id)
     assert deleted is not None
     fetched = get_product(db=db, product_id=created.id)
@@ -65,6 +65,6 @@ def test_delete_product(db):
 
 def test_create_duplicate_sku_returns_none(db):
     product_in = make_product()
-    create_product(db=db, product=product_in)
-    duplicate = create_product(db=db, product=product_in)
+    create_product(db=db, product_in=product_in)
+    duplicate = create_product(db=db, product_in=product_in)
     assert duplicate is None

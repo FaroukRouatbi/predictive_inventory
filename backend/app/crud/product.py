@@ -5,22 +5,24 @@ from uuid import UUID
 from app.models.product import Product
 from app.schemas.product import ProductCreate, ProductUpdate
 
+from typing import Optional
+from app.models.product import Product
 
-def get_product_by_sku(db: Session, sku: str):
+def get_product_by_sku(db: Session, sku: str) -> Optional[Product]:
     return db.query(Product).filter(Product.sku == sku).first()
 
 
-def get_product(db: Session, product_id: UUID):
+def get_product(db: Session, product_id: UUID) -> Optional[Product]:
     return db.query(Product).filter(Product.id == product_id).first()
     # Returns None on miss — endpoint raises the 404
 
 
-def get_products(db: Session, skip: int = 0, limit: int = 100):
+def get_products(db: Session, skip: int = 0, limit: int = 100) -> list[Product]:
     return db.query(Product).offset(skip).limit(limit).all()
 
 
-def create_product(db: Session, product: ProductCreate):
-    db_product = Product(**product.model_dump())
+def create_product(db: Session, product_in: ProductCreate) -> Optional[Product]:
+    db_product = Product(**product_in.model_dump())
     try:
         db.add(db_product)
         db.commit()
@@ -31,7 +33,7 @@ def create_product(db: Session, product: ProductCreate):
     return db_product
 
 
-def update_product(db: Session, product_id: UUID, product_update: ProductUpdate):
+def update_product(db: Session, product_id: UUID, product_update: ProductUpdate) -> Optional[Product]:
     db_product = get_product(db, product_id)
     if not db_product:
         return None  # Endpoint raises 404
@@ -49,7 +51,7 @@ def update_product(db: Session, product_id: UUID, product_update: ProductUpdate)
     return db_product
 
 
-def delete_product(db: Session, product_id: UUID):
+def delete_product(db: Session, product_id: UUID) -> Optional[Product]:
     db_product = get_product(db, product_id)
     if not db_product:
         return None  # Endpoint raises 404

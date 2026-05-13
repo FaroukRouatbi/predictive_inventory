@@ -1,3 +1,4 @@
+import { useAuth } from '../context/AuthContext'
 import type { Page } from '../App'
 
 interface SidebarProps {
@@ -12,6 +13,8 @@ const navItems: { id: Page; label: string; icon: string }[] = [
 ]
 
 export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
+  const { logout } = useAuth()
+
   return (
     <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
       {/* Logo */}
@@ -39,8 +42,14 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-800">
+      <div className="p-4 border-t border-gray-800 space-y-3">
         <p className="text-xs text-gray-500">API: localhost:8000</p>
+        <button
+          onClick={logout}
+          className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white text-sm font-medium rounded-lg transition-colors"
+        >
+          Sign Out
+        </button>
       </div>
     </aside>
   )

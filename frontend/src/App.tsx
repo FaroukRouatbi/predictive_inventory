@@ -1,12 +1,17 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useState } from 'react'
+import { AuthProvider } from './context/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
 import Sidebar from './components/Sidebar'
+import LoginPage from './pages/LoginPage'
 import InventoryPage from './pages/InventoryPage'
 import ForecastPage from './pages/ForecastPage'
 import AlertsPage from './pages/AlertsPage'
+import GoogleCallbackPage from './pages/GoogleCallbackPage'
 
 export type Page = 'inventory' | 'forecast' | 'alerts'
 
-function App() {
+function Dashboard() {
   const [currentPage, setCurrentPage] = useState<Page>('inventory')
 
   const renderPage = () => {
@@ -24,6 +29,28 @@ function App() {
         {renderPage()}
       </main>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 

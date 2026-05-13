@@ -20,7 +20,7 @@ router = APIRouter()
 )
 @limiter.limit("30/minute")
 def create_new_product(request: Request, product_in: ProductCreate, db: Session = Depends(get_db)):
-    product = crud_product.create_product(db=db, product=product_in)
+    product = crud_product.create_product(db=db, product_in=product_in)
     if not product:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

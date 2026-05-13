@@ -1,5 +1,6 @@
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -16,6 +17,7 @@ GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 
+
 @router.get("/login")
 @limiter.limit("20/minute")
 def google_login(request: Request):
@@ -26,13 +28,12 @@ def google_login(request: Request):
         "scope": "openid email profile",
         "access_type": "offline",
     }
-
-    query_string = "&".join(f"{k}={v}" for k,v in params.items())
+    query_string = "&".join(f"{k}={v}" for k, v in params.items())
     google_url = f"{GOOGLE_AUTH_URL}?{query_string}"
-
     return {"url": google_url}
 
-@router.get("/callback", response_model=TokenResponse)
+
+@router.get("/callback")  # ← removed response_model — returns redirect now
 @limiter.limit("20/minute")
 def google_callback(request: Request, code: str, db: Session = Depends(get_db)):
     with httpx.Client() as client:
@@ -46,13 +47,13 @@ def google_callback(request: Request, code: str, db: Session = Depends(get_db)):
                 "grant_type": "authorization_code",
             }
         )
-    
+
     if token_response.status_code != 200:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to exchange code for token with Google."
         )
-    
+
     token_data = token_response.json()
     google_access_token = token_data.get("access_token")
 
@@ -61,7 +62,6 @@ def google_callback(request: Request, code: str, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No access token received from Google."
         )
-    
 
     with httpx.Client() as client:
         userinfo_response = client.get(
@@ -74,7 +74,7 @@ def google_callback(request: Request, code: str, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to fetch user data from Google."
         )
-    
+
     userinfo = userinfo_response.json()
     email = userinfo.get("email")
     full_name = userinfo.get("name", "")
@@ -86,7 +86,6 @@ def google_callback(request: Request, code: str, db: Session = Depends(get_db)):
         )
 
     user = get_user_by_email(db, email=email)
-
     if not user:
         user = create_user(
             db=db,
@@ -96,11 +95,10 @@ def google_callback(request: Request, code: str, db: Session = Depends(get_db)):
                 password=f"google_oauth_{email}"
             )
         )
-    
 
     access_token = create_access_token(subject=user.email)
 
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer"
+    # Redirect to frontend with token in URL
+    return RedirectResponse(
+        url=f"http://localhost:5173/auth/google/callback?access_token={access_token}"
     )

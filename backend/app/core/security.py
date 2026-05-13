@@ -2,6 +2,10 @@ from passlib.context import CryptContext
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from jose import JWTError, jwt
+from app.config import settings
+
+
+SECRET_KEY = settings.SECRET_KEY
 
 
 # ── Password Hashing ──────────────────────────────────────────────────────────
@@ -17,7 +21,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 # ── JWT ───────────────────────────────────────────────────────────────────────
 
-SECRET_KEY = "changethisinproduction"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 

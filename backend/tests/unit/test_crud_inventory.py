@@ -26,7 +26,7 @@ def make_product(db):
         price_cents=999,
         currency=Currency.USD
     )
-    return create_product(db=db, product=product_in)
+    return create_product(db=db, product_in=product_in)
 
 
 def make_inventory(db, quantity=100, reorder_level=10):
@@ -159,7 +159,7 @@ def test_get_low_stock_items(db):
         currency=Currency.USD
     )
     from app.crud.product import create_product
-    healthy_product = create_product(db=db, product=product_in)
+    healthy_product = create_product(db=db, product_in=product_in)
     inventory_in = InventoryCreate(
         product_id=healthy_product.id,
         quantity_on_hand=100,
